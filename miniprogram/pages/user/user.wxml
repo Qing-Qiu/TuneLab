@@ -1,0 +1,56 @@
+<view class="user-center-page">
+  <view class="profile-hero">
+    <view class="profile-avatar">
+      <t-icon name="user-circle" size="64rpx" color="#f4f7f6" />
+    </view>
+    <view class="profile-copy">
+      <text class="profile-title">我的音乐空间</text>
+      <text class="profile-subtitle">实验功能和个人工具先放在这里，保持轻一点。</text>
+    </view>
+  </view>
+
+  <view class="section-head">
+    <text class="section-kicker">LAB</text>
+    <text class="section-title">实验室</text>
+  </view>
+
+  <view class="lab-list">
+    <view
+      wx:for="{{labs}}"
+      wx:key="title"
+      class="lab-row"
+      hover-class="lab-row-hover"
+      bindtap="openLab"
+      data-url="{{item.url}}"
+    >
+      <view class="lab-icon lab-icon-{{item.accent}}">
+        <t-icon name="{{item.icon}}" size="34rpx" color="#f4f7f6" />
+      </view>
+      <view class="lab-copy">
+        <text class="lab-title">{{item.title}}</text>
+        <text class="lab-desc">{{item.desc}}</text>
+      </view>
+      <text class="lab-arrow">›</text>
+    </view>
+  </view>
+
+  <view class="section-head section-head-spaced">
+    <text class="section-kicker">SETTINGS</text>
+    <text class="section-title">账户</text>
+  </view>
+
+  <view class="simple-list">
+    <view class="simple-row" hover-class="simple-row-hover">
+      <text class="simple-title">个人信息</text>
+      <text class="simple-arrow">›</text>
+    </view>
+    <view class="simple-row" hover-class="simple-row-hover">
+      <text class="simple-title">播放与缓存</text>
+      <text class="simple-arrow">›</text>
+    </view>
+    <view class="simple-row" hover-class="simple-row-hover">
+      <text class="simple-title">关于我们</text>
+      <text class="simple-arrow">›</text>
+    </view>
+  </view>
+</view>

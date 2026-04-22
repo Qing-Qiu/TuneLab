@@ -1,0 +1,334 @@
+<view class="piano-page {{compactUi ? 'piano-landscape' : ''}} {{forceLandscapeLayout && !isLandscape ? 'piano-wide-mode' : ''}}">
+  <view class="piano-stage">
+    <view class="piano-side">
+      <view class="piano-hero">
+        <view class="hero-copy">
+          <text class="eyebrow">MELODY LAB</text>
+          <text class="hero-title">旋律复刻挑战</text>
+          <text class="hero-subtitle">听一段短旋律，再用手机琴键复刻。</text>
+        </view>
+        <view class="hero-actions">
+          <button class="hero-action-btn" bindtap="openPianoSettings" aria-label="设置">
+            <t-icon name="setting" size="{{compactUi ? '18rpx' : '32rpx'}}" color="#f4f7f6" />
+          </button>
+        </view>
+      </view>
+
+      <view class="level-panel">
+        <view class="level-main">
+          <text class="level-kicker">LEVEL ROAD</text>
+          <text class="level-title">闯关进度 {{levelProgressText}}</text>
+          <view class="level-track">
+            <view class="level-track-fill" style="width: {{levelProgressPercent}}%;"></view>
+          </view>
+        </view>
+        <view class="level-unlock">
+          <text class="level-unlock-value">{{unlockedCount}}</text>
+          <text class="level-unlock-label">已开放</text>
+        </view>
+      </view>
+
+      <view class="daily-panel {{dailyCompletedToday ? 'daily-panel-done' : ''}}">
+        <view class="daily-copy">
+          <text class="daily-kicker">DAILY</text>
+          <text class="daily-title">{{dailyChallengeDate}} · {{dailyChallengeTitle}}</text>
+          <text class="daily-desc">{{dailyStatusText}} · {{dailyRewardText}}</text>
+        </view>
+        <view class="daily-side">
+          <text class="daily-streak">{{dailyStreak}}</text>
+          <text class="daily-streak-label">连击</text>
+          <button class="daily-play-btn" bindtap="startDailyChallenge">
+            <t-icon name="play-circle" size="{{compactUi ? '16rpx' : '24rpx'}}" color="#12201d" />
+          </button>
+        </view>
+      </view>
+
+      <view class="challenge-panel">
+        <view class="challenge-head">
+          <view class="challenge-title-group">
+            <text class="challenge-kicker">{{activeChallengeLevel}}</text>
+            <text class="challenge-title">{{activeChallengeTitle}}</text>
+            <text class="challenge-desc">{{challengeMessage}}</text>
+          </view>
+          <view class="challenge-score">
+            <text class="challenge-score-value">{{challengeScore}}</text>
+            <text class="challenge-score-label">分</text>
+          </view>
+        </view>
+
+        <scroll-view class="challenge-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="challenge-filter-row">
+            <view
+              wx:for="{{challengeFilters}}"
+              wx:key="id"
+              class="challenge-filter-chip {{challengeFilter === item.id ? 'challenge-filter-chip-active' : ''}}"
+              data-filter="{{item.id}}"
+              bindtap="selectChallengeFilter"
+            >{{item.label}}</view>
+          </view>
+
+          <view class="challenge-tabs">
+            <view
+              wx:for="{{filteredChallengeList}}"
+              wx:key="id"
+              class="challenge-tab {{activeChallengeId === item.id ? 'challenge-tab-active' : ''}} {{item.completed ? 'challenge-tab-completed' : ''}}"
+              data-challenge-id="{{item.id}}"
+              bindtap="selectChallenge"
+            >
+              <view class="challenge-tab-top">
+                <text class="challenge-tab-title">{{item.levelNo}}. {{item.title}}</text>
+                <text class="challenge-tab-level">{{item.completed ? '通关' : item.level}}</text>
+              </view>
+              <text class="challenge-tab-desc">{{item.desc}}</text>
+              <text wx:if="{{item.bestScore}}" class="challenge-tab-best">BEST {{item.bestScore}}</text>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="challenge-steps">
+          <view
+            wx:for="{{challengeDisplay}}"
+            wx:key="id"
+            class="challenge-step challenge-step-{{item.state}}"
+          >
+            <text>{{item.text}}</text>
+          </view>
+        </view>
+
+        <view class="challenge-actions">
+          <button class="challenge-btn challenge-btn-primary" loading="{{isChallengePlaying}}" bindtap="playChallenge">播放</button>
+          <button class="challenge-btn" bindtap="resetChallenge">重置</button>
+          <button class="challenge-btn" bindtap="revealChallenge">答案</button>
+          <button class="challenge-btn" bindtap="nextChallenge">下一题</button>
+          <button class="challenge-btn" bindtap="randomChallenge">随机</button>
+        </view>
+      </view>
+
+      <view class="chord-row">
+        <button
+          wx:for="{{chordButtons}}"
+          wx:key="id"
+          class="chord-btn"
+          data-chord="{{item.id}}"
+          bindtap="playChord"
+        >
+          <text>{{item.label}}</text>
+        </button>
+      </view>
+    </view>
+
+    <view class="piano-play-area">
+      <view class="keyboard-meta">
+        <view class="keyboard-meta-item">
+          <text class="keyboard-meta-label">上次</text>
+          <text class="keyboard-meta-value">{{lastNote}}</text>
+        </view>
+        <view class="keyboard-meta-item">
+          <text class="keyboard-meta-label">触键</text>
+          <text class="keyboard-meta-value">{{playedCount}}</text>
+        </view>
+        <view class="keyboard-meta-item">
+          <text class="keyboard-meta-label">进度</text>
+          <text class="keyboard-meta-value">{{challengeStep}}/{{challengeNotes.length}}</text>
+        </view>
+        <view class="keyboard-meta-item keyboard-range-item">
+          <text class="keyboard-meta-label">音域</text>
+          <text class="keyboard-meta-value">{{keyboardRangeText}}</text>
+        </view>
+      </view>
+
+      <view class="keyboard-shell">
+        <view class="white-keys" style="grid-template-columns: repeat({{whiteKeyCount}}, minmax(0, 1fr));">
+          <view
+            wx:for="{{whiteKeys}}"
+            wx:key="note"
+            class="white-key {{activeNotes[item.note] ? 'key-active' : ''}}"
+            data-note="{{item.note}}"
+            catchtouchstart="onKeyTouchStart"
+            catchtouchend="onKeyTouchEnd"
+            catchtouchcancel="onKeyTouchEnd"
+            catchtap="onKeyTap"
+          >
+            <text class="key-syllable">{{item.label}}</text>
+            <text class="key-note">{{item.note}}</text>
+          </view>
+        </view>
+
+        <view
+          wx:for="{{blackKeys}}"
+          wx:key="note"
+          class="black-key {{activeNotes[item.note] ? 'black-key-active' : ''}}"
+          style="left: {{item.left}}%; width: {{item.width || blackKeyWidth}}%;"
+          data-note="{{item.note}}"
+          catchtouchstart="onKeyTouchStart"
+          catchtouchend="onKeyTouchEnd"
+          catchtouchcancel="onKeyTouchEnd"
+          catchtap="onKeyTap"
+        >
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{settingsVisible}}" class="piano-modal-mask" bindtap="closePianoSettings">
+    <view class="piano-modal" catchtap="noop">
+      <view class="modal-head">
+        <view>
+          <text class="modal-kicker">SETTINGS</text>
+          <text class="modal-title">演奏设置</text>
+        </view>
+        <button class="modal-icon-btn" bindtap="closePianoSettings">
+          <t-icon name="close" size="{{compactUi ? '16rpx' : '28rpx'}}" color="#f4f7f6" />
+        </button>
+      </view>
+
+      <scroll-view class="settings-scroll" scroll-y enhanced>
+        <view class="settings-body">
+          <view class="settings-left">
+            <text class="modal-section-title">演奏</text>
+            <view class="setting-card">
+              <view class="control-row">
+                <view class="control-label">
+                  <t-icon name="sound" size="{{compactUi ? '16rpx' : '30rpx'}}" color="#7dd7c2" />
+                  <text>音量</text>
+                </view>
+                <slider
+                  class="volume-slider"
+                  min="10"
+                  max="100"
+                  value="{{volume}}"
+                  activeColor="#7dd7c2"
+                  backgroundColor="rgba(255,255,255,0.12)"
+                  block-size="18"
+                  bindchanging="onVolumeChanging"
+                  bindchange="onVolumeChange"
+                />
+                <text class="volume-value">{{volume}}</text>
+              </view>
+
+              <view class="control-row sustain-row">
+                <view class="control-label">
+                  <t-icon name="gesture-ranslation" size="{{compactUi ? '16rpx' : '30rpx'}}" color="#f1a36c" />
+                  <text>延音</text>
+                </view>
+                <switch checked="{{sustainEnabled}}" color="#f1a36c" bindchange="onSustainChange" />
+              </view>
+            </view>
+
+            <text class="modal-section-title">音域</text>
+            <view class="mode-tabs modal-mode-tabs">
+              <view
+                wx:for="{{octaveModes}}"
+                wx:key="id"
+                class="mode-tab {{activeMode === item.id ? 'mode-tab-active' : ''}}"
+                data-mode="{{item.id}}"
+                bindtap="onModeTap"
+              >
+                <text>{{item.label}}</text>
+              </view>
+            </view>
+
+            <view class="setting-actions">
+              <button class="setting-action-btn setting-action-primary" bindtap="toggleLandscapeMode">
+                <t-icon name="rotate" size="{{compactUi ? '15rpx' : '28rpx'}}" color="#10201d" />
+                <text>{{orientationButtonText}}</text>
+              </button>
+              <button class="setting-action-btn" bindtap="openRankModal">
+                <t-icon name="chart-bar" size="{{compactUi ? '15rpx' : '28rpx'}}" color="#f4f7f6" />
+                <text>排行榜</text>
+              </button>
+            </view>
+          </view>
+
+          <view class="settings-right">
+            <text class="modal-section-title">歌曲</text>
+            <view class="song-list">
+              <view
+                wx:for="{{songList}}"
+                wx:key="id"
+                class="song-chip {{activeSongId === item.id ? 'song-chip-active' : ''}}"
+                data-song-id="{{item.id}}"
+                bindtap="selectSong"
+              >
+                <text class="song-chip-title">{{item.title}}</text>
+                <text class="song-chip-desc">{{item.desc}}</text>
+              </view>
+            </view>
+
+            <view class="score-card">
+              <view class="score-head">
+                <view>
+                  <text class="score-kicker">SCORE</text>
+                  <text class="score-title">{{activeSongTitle}}</text>
+                </view>
+                <button class="score-play-btn" loading="{{isChallengePlaying}}" bindtap="autoPlaySelectedSong">
+                  <t-icon name="play-circle" size="{{compactUi ? '16rpx' : '30rpx'}}" color="#10201d" />
+                </button>
+              </view>
+              <scroll-view class="score-rows" scroll-y enhanced>
+                <text wx:for="{{activeScoreRows}}" wx:key="*this" class="score-row">{{item}}</text>
+              </scroll-view>
+              <text class="score-notice">{{activeScoreNotice}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <button class="modal-close-btn" bindtap="closePianoSettings">完成</button>
+    </view>
+  </view>
+
+  <view wx:if="{{rankModalVisible}}" class="piano-modal-mask" bindtap="closeRankModal">
+    <view class="piano-modal" catchtap="noop">
+      <view class="modal-head">
+        <view>
+          <text class="modal-kicker">LOCAL RANK</text>
+          <text class="modal-title">本机排行榜</text>
+        </view>
+        <button class="modal-icon-btn" bindtap="closeRankModal">
+          <t-icon name="close" size="{{compactUi ? '16rpx' : '28rpx'}}" color="#f4f7f6" />
+        </button>
+      </view>
+
+      <scroll-view wx:if="{{leaderboard.length}}" class="rank-filter-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="rank-filter-row">
+          <view
+            class="rank-filter-chip {{rankFilterChallengeId === 'all' ? 'rank-filter-chip-active' : ''}}"
+            data-challenge-id="all"
+            bindtap="selectRankFilter"
+          >全部</view>
+          <view
+            wx:for="{{challengeList}}"
+            wx:key="id"
+            class="rank-filter-chip {{rankFilterChallengeId === item.id ? 'rank-filter-chip-active' : ''}}"
+            data-challenge-id="{{item.id}}"
+            bindtap="selectRankFilter"
+          >{{item.title}}</view>
+        </view>
+      </scroll-view>
+      <scroll-view wx:if="{{filteredLeaderboard.length}}" class="rank-list rank-modal-list" scroll-y enhanced>
+        <view wx:for="{{filteredLeaderboard}}" wx:key="id" class="rank-row">
+          <text class="rank-index">#{{index + 1}}</text>
+          <view class="rank-copy">
+            <text class="rank-song">{{item.title}}</text>
+            <text class="rank-meta">{{item.correctText}} · {{item.createdAt}}</text>
+          </view>
+          <text class="rank-score">{{item.score}}</text>
+        </view>
+      </scroll-view>
+      <view wx:else class="rank-empty">{{leaderboard.length ? '这个题目还没有成绩。' : '完成一局后会记录到这里。'}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{passAnimationVisible}}" class="pass-overlay" bindtap="closePassAnimation">
+    <view class="pass-card" catchtap="noop">
+      <view class="pass-icon">
+        <t-icon name="rocket" size="{{compactUi ? '32rpx' : '56rpx'}}" color="#12201d" />
+      </view>
+      <text class="pass-title">{{passAnimationTitle}}</text>
+      <text class="pass-subtitle">{{passAnimationSubtitle}}</text>
+      <button class="pass-btn" bindtap="closePassAnimation">继续挑战</button>
+    </view>
+  </view>
+</view>

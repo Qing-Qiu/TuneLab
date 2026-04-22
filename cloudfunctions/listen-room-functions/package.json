@@ -1,0 +1,11 @@
+{
+  "name": "listen-room-functions",
+  "version": "1.0.0",
+  "description": "Shared listening room prototype",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~3.0.1"
+  }
+}

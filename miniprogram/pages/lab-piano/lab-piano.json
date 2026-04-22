@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "旋律复刻挑战",
+  "navigationBarBackgroundColor": "#0f1715",
+  "navigationBarTextStyle": "white",
+  "pageOrientation": "auto",
+  "usingComponents": {
+    "t-icon": "tdesign-miniprogram/icon/icon"
+  }
+}

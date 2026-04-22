@@ -1,0 +1,629 @@
+<view class="page-container {{isLandscape ? 'landscape-mode' : ''}} {{tabValue === '2' ? 'quiz-skin' : 'music-skin'}} {{gameState === 'playing' ? 'playing-skin' : ''}}">
+  <view class="background-bg"></view>
+  <view class="main-layout">
+    <scroll-view wx:if="{{tabValue === '1'}}" scroll-y class="content-scroll" bindscrolltolower="onReachBottom" lower-threshold="100" enable-flex>
+      <view class="content-wrapper music-view">
+        <view class="listen-hero-band">
+          <view class="listen-hero-content">
+            <text class="eyebrow-label">MUSIC</text>
+            <text class="hero-title">音乐</text>
+            <text class="hero-subtitle">{{searchContent ? '搜索：' + searchContent : '搜索歌曲，整理歌单，慢慢听。'}}</text>
+          </view>
+        </view>
+
+        <view class="listen-toolbar">
+          <view class="section-header">
+            <text class="section-title">搜索歌曲</text>
+          </view>
+          <view class="search-container">
+            <view class="song-search-box">
+              <t-icon name="search" size="36rpx" color="#89a09a" />
+              <input
+                class="song-search-input"
+                value="{{searchContent}}"
+                placeholder="搜索你想听的歌曲"
+                placeholder-class="song-search-placeholder"
+                confirm-type="search"
+                bindinput="onSearchInput"
+                bindconfirm="submitSearch"
+              />
+              <view wx:if="{{searchContent}}" class="search-clear-btn" bindtap="clearSearch" aria-label="清空搜索">
+                <t-icon name="close-circle-filled" size="34rpx" color="rgba(244, 247, 246, 0.48)" />
+              </view>
+              <button class="song-search-submit" bindtap="submitSearch">搜索</button>
+            </view>
+          </view>
+        </view>
+
+        <view class="playlist-hub animate-enter">
+          <view class="playlist-hub-head">
+            <view class="section-header">
+              <text class="section-title">歌单</text>
+            </view>
+            <view class="playlist-head-actions">
+              <button class="playlist-create-btn" bindtap="showPlaylistCreator">
+                <t-icon name="add-circle" size="30rpx" color="#12201d" />
+                <text>新建</text>
+              </button>
+              <button class="playlist-expand-btn" bindtap="togglePlaylistExpanded">
+                <t-icon name="{{playlistExpanded ? 'chevron-up' : 'chevron-down'}}" size="28rpx" color="#f4f7f6" />
+              </button>
+            </view>
+          </view>
+
+          <view wx:if="{{playlistExpanded}}" class="playlist-cloud-row">
+            <view class="playlist-cloud-status">
+              <t-icon name="cloud" size="28rpx" color="rgba(244, 247, 246, 0.72)" />
+              <text>{{playlistCloudStatus}}</text>
+              <text wx:if="{{playlistCloudUpdatedText}}" class="playlist-cloud-time">{{playlistCloudUpdatedText}}</text>
+            </view>
+            <view class="playlist-cloud-actions">
+              <button class="playlist-cloud-btn" loading="{{playlistCloudSyncing}}" bindtap="syncPlaylistsToCloud">
+                <t-icon name="upload" size="24rpx" color="#12201d" />
+                <text>同步</text>
+              </button>
+              <button class="playlist-cloud-btn playlist-cloud-ghost" loading="{{playlistCloudSyncing}}" bindtap="restorePlaylistsFromCloud">
+                <t-icon name="download" size="24rpx" color="#f4f7f6" />
+                <text>恢复</text>
+              </button>
+            </view>
+          </view>
+
+          <scroll-view wx:if="{{playlistExpanded}}" class="playlist-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+            <view class="playlist-card-row">
+              <view
+                wx:for="{{playlists}}"
+                wx:key="id"
+                class="playlist-card {{selectedPlaylistId === item.id ? 'playlist-card-active' : ''}}"
+                data-playlist-id="{{item.id}}"
+                bindtap="selectPlaylist"
+              >
+                <image class="playlist-card-cover" src="{{item.cover || '/images/icons/music.png'}}" mode="aspectFill" lazy-load />
+                <text class="playlist-card-title">{{item.name}}</text>
+                <text class="playlist-card-desc">{{item.songs.length}} 首 · {{item.desc}}</text>
+              </view>
+            </view>
+          </scroll-view>
+
+          <view wx:if="{{selectedPlaylistId}}" class="playlist-detail-card">
+            <view class="playlist-detail-top">
+              <image class="playlist-detail-cover" src="{{selectedPlaylistCover || '/images/icons/music.png'}}" mode="aspectFill" />
+              <view class="playlist-detail-copy">
+                <text class="playlist-detail-title">{{selectedPlaylistName}}</text>
+                <text class="playlist-detail-desc">{{selectedPlaylistSongs.length}} 首歌 · {{selectedPlaylistDesc}}</text>
+              </view>
+              <view class="playlist-detail-actions">
+                <button class="playlist-action-btn playlist-action-primary" bindtap="playSelectedPlaylist">
+                  <t-icon name="play-circle-filled" size="30rpx" color="#12201d" />
+                </button>
+                <button class="playlist-action-btn" bindtap="showPlaylistEditor">
+                  <t-icon name="edit" size="28rpx" color="#f4f7f6" />
+                </button>
+                <button class="playlist-action-btn playlist-action-danger" bindtap="deleteSelectedPlaylist">
+                  <t-icon name="delete" size="28rpx" color="#ffffff" />
+                </button>
+              </view>
+            </view>
+
+            <view wx:if="{{selectedPlaylistSongs.length}}" class="playlist-song-list">
+              <text class="playlist-sort-tip">{{isPlaylistSorting ? '拖到目标位置后松手' : '长按歌曲可以拖拽排序'}}</text>
+              <view
+                wx:for="{{selectedPlaylistSongs}}"
+                wx:key="rid"
+                class="playlist-song-row {{isPlaylistSorting && dragSongIndex === index ? 'playlist-song-row-dragging' : ''}}"
+                data-num="{{index}}"
+                bindtap="playPlaylistSong"
+                bindlongpress="startPlaylistSongDrag"
+                catchtouchmove="movePlaylistSongDrag"
+                catchtouchend="endPlaylistSongDrag"
+                catchtouchcancel="endPlaylistSongDrag"
+              >
+                <image class="playlist-song-cover" src="{{item.pic || '/images/icons/music.png'}}" mode="aspectFill" lazy-load />
+                <view class="playlist-song-copy">
+                  <text class="playlist-song-title">{{item.name}}</text>
+                  <text class="playlist-song-artist">{{item.artist}}</text>
+                </view>
+                <view class="playlist-drag-handle">
+                  <t-icon name="drag-move" size="26rpx" color="rgba(244, 247, 246, 0.56)" />
+                </view>
+                <button class="playlist-song-remove" data-num="{{index}}" catchtap="removePlaylistSong">
+                  <t-icon name="close" size="24rpx" color="rgba(244, 247, 246, 0.68)" />
+                </button>
+              </view>
+            </view>
+
+            <view wx:else class="playlist-empty-tip">
+              <t-icon name="music" size="38rpx" color="rgba(244, 247, 246, 0.46)" />
+              <text>搜索歌曲后，点歌曲右侧的加号收进这里。</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="quiz-entry-panel animate-enter" bindtap="openQuiz" hover-class="quiz-entry-hover">
+          <view class="quiz-entry-copy">
+            <text class="quiz-entry-title">听音辨曲</text>
+            <text class="quiz-entry-desc">单人练习或好友实时 PK。</text>
+          </view>
+          <view class="quiz-entry-art">
+            <text class="quiz-entry-arrow">›</text>
+          </view>
+        </view>
+
+        <view class="song-list-shell">
+          <view wx:if="{{songs_backup && songs_backup.length}}" class="song-list-container">
+            <view wx:for="{{songs_backup}}" wx:key="rid" class="song-card-wrapper animate-enter" style="animation-delay: {{index * 50}}ms">
+              <view class="song-card" hover-class="song-card-hover" data-id="{{item.rid}}" data-num="{{index}}" bind:tap="playSong">
+                <image class="song-cover" src="{{item.pic}}" mode="aspectFill" lazy-load />
+                <view class="song-info">
+                  <text class="song-title">{{item.name}}</text>
+                  <text class="song-artist">{{item.artist}}</text>
+                </view>
+                <view class="song-action-column">
+                  <view class="play-btn">
+                    <t-icon name="play-circle" size="44rpx" color="#121a18" />
+                  </view>
+                  <button class="add-song-btn" data-num="{{index}}" catchtap="openAddSongSheet" aria-label="加入歌单">
+                    <t-icon name="add-circle" size="34rpx" color="#f4f7f6" />
+                  </button>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <view wx:if="{{songs_backup && songs_backup.length}}" class="loading-footer">
+            <text wx:if="{{isLoading}}" class="footer-text">正在加载更多...</text>
+            <text wx:elif="{{isLastPage && songs_backup.length > 0}}" class="footer-text">已经到底啦</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view wx:if="{{tabValue === '1' && playerVisible && playerSong}}" class="mini-player animate-enter">
+      <view class="mini-player-main">
+        <image class="mini-player-cover" src="{{playerSong.pic || '/images/icons/music.png'}}" mode="aspectFill" bindtap="showPlayerDetail" />
+        <view class="mini-player-copy" bindtap="showPlayerDetail">
+          <text class="mini-player-kicker">{{playerLoading ? '正在加载' : (isPlaying ? '正在播放' : '已暂停')}}</text>
+          <text class="mini-player-title">{{playerSong.name}}</text>
+          <text class="mini-player-artist">{{playerSong.artist}}</text>
+        </view>
+
+        <view class="mini-player-actions">
+          <view class="mini-control-btn" bindtap="playPreviousSong" aria-label="上一首">
+            <t-icon name="previous" size="38rpx" color="#f4f7f6" />
+          </view>
+          <view class="mini-control-btn mini-control-primary" bindtap="togglePlayer" aria-label="{{isPlaying ? '暂停' : '播放'}}">
+            <t-icon name="{{isPlaying ? 'pause-circle-filled' : 'play-circle-filled'}}" size="54rpx" color="#121a18" />
+          </view>
+          <view class="mini-control-btn" bindtap="playNextSong" aria-label="下一首">
+            <t-icon name="next" size="38rpx" color="#f4f7f6" />
+          </view>
+          <view class="mini-control-close" bindtap="closePlayer" aria-label="关闭播放器">
+            <t-icon name="close" size="32rpx" color="rgba(244, 247, 246, 0.62)" />
+          </view>
+        </view>
+      </view>
+
+      <view class="mini-player-progress">
+        <text class="mini-player-time">{{playerCurrentText}}</text>
+        <slider
+          class="mini-player-slider"
+          min="0"
+          max="1000"
+          value="{{playerProgress}}"
+          block-size="12"
+          activeColor="#f1a36c"
+          backgroundColor="rgba(255, 255, 255, 0.14)"
+          bindchange="onPlayerSeek"
+        />
+        <text class="mini-player-time">{{playerDurationText}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{playerDetailVisible && playerSong}}" class="player-detail">
+      <image class="player-detail-bg" src="{{playerSong.pic || '/images/icons/music.png'}}" mode="aspectFill" />
+      <view class="player-detail-mask"></view>
+
+      <view class="player-detail-topbar">
+        <view class="detail-icon-btn" bindtap="closePlayerDetail" aria-label="收起">
+          <t-icon name="chevron-down" size="40rpx" color="#f4f7f6" />
+        </view>
+        <view class="player-detail-heading">
+          <text class="detail-title">{{playerSong.name}}</text>
+          <text class="detail-subtitle">{{playerSong.artist}}</text>
+        </view>
+        <view class="detail-icon-btn" bindtap="closePlayer" aria-label="关闭">
+          <t-icon name="close" size="34rpx" color="#f4f7f6" />
+        </view>
+      </view>
+
+      <view class="player-detail-body">
+        <view class="detail-cover-shell {{isPlaying ? 'detail-cover-playing' : ''}}">
+          <image class="detail-cover" src="{{playerSong.pic || '/images/icons/music.png'}}" mode="aspectFill" />
+        </view>
+
+        <scroll-view scroll-y class="lyric-scroll" scroll-into-view="{{activeLyricId}}" scroll-with-animation>
+          <view class="lyric-stack">
+            <text wx:for="{{playerLyricItems}}" wx:key="id" id="{{item.id}}" class="lyric-line {{index === activeLyricIndex ? 'lyric-line-active' : ''}}">{{item.text}}</text>
+            <text wx:if="{{lyricError}}" class="lyric-note">{{lyricError}}</text>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="player-detail-controls">
+        <view class="detail-progress-row">
+          <text class="detail-time">{{playerCurrentText}}</text>
+          <slider
+            class="detail-slider"
+            min="0"
+            max="1000"
+            value="{{playerProgress}}"
+            block-size="14"
+            activeColor="#f1a36c"
+            backgroundColor="rgba(255, 255, 255, 0.18)"
+            bindchange="onPlayerSeek"
+          />
+          <text class="detail-time">{{playerDurationText}}</text>
+        </view>
+
+        <view class="detail-control-row">
+          <view class="detail-control-btn" bindtap="playPreviousSong" aria-label="上一首">
+            <t-icon name="previous" size="46rpx" color="#f4f7f6" />
+          </view>
+          <view class="detail-control-btn detail-control-main" bindtap="togglePlayer" aria-label="{{isPlaying ? '暂停' : '播放'}}">
+            <t-icon name="{{isPlaying ? 'pause-circle-filled' : 'play-circle-filled'}}" size="76rpx" color="#121a18" />
+          </view>
+          <view class="detail-control-btn" bindtap="playNextSong" aria-label="下一首">
+            <t-icon name="next" size="46rpx" color="#f4f7f6" />
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{tabValue === '2'}}" class="content-wrapper quiz-view">
+      <view wx:if="{{gameState === 'intro'}}" class="quiz-page-topbar">
+        <view class="icon-chip" bindtap="returnToMusic">
+          <t-icon name="close" size="34rpx" color="#f4f7f6" />
+        </view>
+        <text class="quiz-page-title">挑战设置</text>
+        <view class="topbar-spacer"></view>
+      </view>
+
+      <view wx:if="{{gameState === 'intro'}}" class="quiz-intro-shell">
+        <view class="quiz-hero-band">
+          <view class="quiz-hero-copy">
+            <text class="eyebrow-label">QUIZ ARENA</text>
+            <text class="quiz-title">听音辨曲</text>
+            <text class="quiz-subtitle">从热门歌单里抢答，也可以直接拉好友同题对战。</text>
+          </view>
+          <view class="quiz-hero-media">
+            <image class="quiz-hero-icon" src="/images/icons/music.png" mode="aspectFit" />
+          </view>
+        </view>
+
+        <view class="quiz-metric-row">
+          <view class="quiz-metric">
+            <text class="quiz-metric-value">5</text>
+            <text class="quiz-metric-label">题 / 局</text>
+          </view>
+          <view class="quiz-metric">
+            <text class="quiz-metric-value">20</text>
+            <text class="quiz-metric-label">秒 / 题</text>
+          </view>
+          <view class="quiz-metric">
+            <text class="quiz-metric-value">{{selectedSinger ? selectedSinger : '热门歌曲'}}</text>
+            <text class="quiz-metric-label">当前主题</text>
+          </view>
+        </view>
+
+        <view class="quiz-config-shell">
+          <view class="section-header">
+            <text class="section-kicker">THEME</text>
+            <text class="section-title">挑一个题库方向</text>
+          </view>
+
+          <view class="custom-theme-search">
+            <t-icon name="search" size="36rpx" color="#89a09a" style="margin-right: 16rpx;" />
+            <input class="theme-input" placeholder="自定义主题" placeholder-class="theme-placeholder" value="{{customTheme}}" bindconfirm="onSearchCustomTheme" bindinput="onInputCustomTheme" />
+          </view>
+
+          <view class="singer-selection">
+            <view class="singer-group">
+              <view wx:for="{{singerList}}" wx:key="*this" class="singer-tag {{selectedSinger === item ? 'singer-tag-active' : ''}}" bindtap="onSingerChange" data-item="{{item}}">
+                {{item}}
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="game-actions">
+          <t-button theme="primary" size="large" block t-class="start-btn" bind:tap="startGame">开始单人挑战</t-button>
+          <view class="action-row">
+            <t-button theme="primary" size="large" t-class="pk-btn" bind:tap="startOnlinePK">邀请好友 PK</t-button>
+            <t-button theme="light" size="large" t-class="join-btn" bind:tap="showJoinRoomDialog">加入房间</t-button>
+          </view>
+        </view>
+      </view>
+
+      <t-dialog visible="{{joinRoomVisible}}" title="输入房间号" confirm-btn="加入" cancel-btn="取消" bind:confirm="confirmJoinRoom" bind:cancel="hideJoinRoomDialog">
+        <view class="dialog-input-wrapper" slot="content">
+          <t-input borderless class="dialog-input" clearable type="number" bind:change="onJoinRoomInput" align="left" maxlength="6" />
+        </view>
+      </t-dialog>
+
+      <view wx:if="{{gameState === 'lobby'}}" class="lobby-shell">
+        <view class="lobby-topbar">
+          <view class="section-header compact-header">
+            <text class="section-kicker">ROOM</text>
+            <text class="section-title">好友对战</text>
+          </view>
+          <view class="icon-chip" bindtap="goToIntro">
+            <t-icon name="close" size="36rpx" color="#f4f7f6" />
+          </view>
+        </view>
+
+        <view class="room-code-banner" bindtap="copyRoomId">
+          <text class="room-banner-label">房间号</text>
+          <text class="room-banner-value">{{roomId}}</text>
+          <view class="room-copy-chip">
+            <t-icon name="file-copy" size="28rpx" color="#12201d" />
+          </view>
+        </view>
+
+        <view class="room-meta-row">
+          <view class="room-meta-card">
+            <text class="room-meta-label">模式</text>
+            <text class="room-meta-value">实时 PK</text>
+          </view>
+          <view class="room-meta-card">
+            <text class="room-meta-label">状态</text>
+            <text class="room-meta-value">{{opponentInfo ? (isHost ? (opponentInfo.isReady ? '可开局' : '等待准备') : (isReady ? '已准备' : '待准备')) : '等待加入'}}</text>
+          </view>
+        </view>
+
+        <view class="lobby-player-lane">
+          <view class="player-panel host-panel">
+            <text class="player-role-chip">房主</text>
+            <t-avatar image="{{isHost ? (userInfo.avatarUrl || '/images/avatars/cat.jpg') : (opponentInfo.avatarUrl || '/images/avatars/cat.jpg')}}" size="large" />
+            <text class="player-name">{{isHost ? (userInfo.nickName || '房主') : (opponentInfo.nickName || '房主')}}</text>
+            <text class="player-status ready">已就位</text>
+          </view>
+
+          <view class="lobby-vs">
+            <text class="lobby-vs-text">VS</text>
+          </view>
+
+          <view class="player-panel guest-panel">
+            <text class="player-role-chip">挑战者</text>
+            <block wx:if="{{isHost}}">
+              <t-avatar wx:if="{{opponentInfo}}" image="{{opponentInfo.avatarUrl || '/images/avatars/cat.jpg'}}" size="large" />
+              <view wx:else class="waiting-avatar">
+                <t-loading theme="spinner" size="40rpx" />
+              </view>
+              <text class="player-name">{{opponentInfo ? (opponentInfo.nickName || '对手') : '等待加入...'}}</text>
+              <text class="player-status {{opponentInfo && opponentInfo.isReady ? 'ready' : 'waiting'}}">{{opponentInfo ? (opponentInfo.isReady ? '准备就绪' : '等待中') : '等待中'}}</text>
+            </block>
+            <block wx:else>
+              <t-avatar image="{{userInfo.avatarUrl || '/images/avatars/cat.jpg'}}" size="large" />
+              <text class="player-name">你</text>
+              <text class="player-status {{isReady ? 'ready' : 'waiting'}}">{{isReady ? '准备就绪' : '等待中'}}</text>
+            </block>
+          </view>
+        </view>
+
+        <view class="lobby-actions">
+          <button wx:if="{{!opponentInfo}}" class="invite-btn" open-type="share">邀请好友加入</button>
+
+          <t-button wx:if="{{opponentInfo && isHost}}" theme="primary" size="large" block t-class="room-primary-btn" bind:tap="startPKGame" disabled="{{!opponentInfo.isReady || isTransitioning}}">
+            {{isTransitioning ? '正在开始...' : (opponentInfo.isReady ? '开始对战' : '等待对手准备...')}}
+          </t-button>
+
+          <block wx:if="{{opponentInfo && !isHost}}">
+            <t-button theme="{{isReady ? 'danger' : 'primary'}}" size="large" block t-class="room-primary-btn" bind:tap="toggleReady" disabled="{{isReadyUpdating}}">
+              {{isReadyUpdating ? '同步中...' : (isReady ? '取消准备' : '准备就绪')}}
+            </t-button>
+            <view wx:if="{{isReady}}" class="waiting-text">等待房主开始...</view>
+          </block>
+        </view>
+      </view>
+
+      <view wx:if="{{gameState === 'playing'}}" class="play-shell">
+        <view class="play-hud">
+          <view class="icon-chip" bindtap="onExitGame">
+            <t-icon name="close" size="36rpx" color="#f4f7f6" />
+          </view>
+          <view class="play-hud-center">
+            <text class="play-round-title">第 {{gameRound}} / {{gameTotalRounds}} 题</text>
+            <text wx:if="{{isRoundPreparing}}" class="play-round-subtitle">换题中，马上开始</text>
+            <text wx:else class="play-round-subtitle">剩余 {{timeLeft}} 秒</text>
+          </view>
+          <view class="hud-score-card">
+            <text class="hud-score-label">我的分数</text>
+            <text class="hud-score-value">{{gameScore}}</text>
+          </view>
+        </view>
+
+        <view wx:if="{{isMultiplayer}}" class="pk-banner">
+          <view class="pk-score-card pk-score-card-opponent">
+            <text class="pk-score-label">对手</text>
+            <text class="pk-score-value">{{opponentScore}}</text>
+          </view>
+          <view class="pk-divider">
+            <text class="pk-divider-text">VS</text>
+          </view>
+          <view class="pk-score-card pk-score-card-me">
+            <text class="pk-score-label">你</text>
+            <text class="pk-score-value">{{gameScore}}</text>
+          </view>
+        </view>
+
+        <view class="play-main">
+          <view class="disc-stage">
+            <view class="disc-stage-glow"></view>
+            <view class="vinyl-container {{isPlaying ? 'vinyl-playing' : ''}}" bindtap="toggleGameMusic">
+              <view class="vinyl-disc">
+                <view class="vinyl-cover">
+                  <t-icon name="{{isPlaying ? 'music' : 'play-circle'}}" size="{{isPlaying ? '84rpx' : '104rpx'}}" color="#fff" />
+                </view>
+              </view>
+            </view>
+            <text class="disc-caption">{{isRoundPreparing ? '换题中，稍等一下' : (isPlaying ? '正在播放前奏，点按可暂停' : '点按唱片继续播放')}}</text>
+          </view>
+
+          <view class="answer-sheet">
+            <view class="section-header answer-sheet-header">
+              <text class="section-kicker">NOW GUESSING</text>
+              <text class="section-title">选出正确歌名</text>
+            </view>
+
+            <view class="options-container">
+              <block wx:for="{{gameOptions}}" wx:key="rid">
+                <button class="option-btn {{isRoundPreparing ? 'option-waiting' : ''}} {{showRoundResult && item.rid === targetSong.rid ? 'option-correct' : ''}} {{showRoundResult && item.rid !== targetSong.rid && (roundResult === 'wrong' || roundResult === 'timeout') ? 'option-wrong' : ''}}" bindtap="handleGuess" data-rid="{{item.rid}}">
+                  <view class="option-content">
+                    <view class="option-copy">
+                      <text class="option-title">{{item.name}}</text>
+                      <text class="option-artist">{{item.artist}}</text>
+                    </view>
+                    <t-icon wx:if="{{showRoundResult && item.rid === targetSong.rid}}" name="check-circle-filled" color="#0b9d61" size="40rpx" />
+                    <t-icon wx:if="{{showRoundResult && item.rid !== targetSong.rid && (roundResult === 'wrong' || roundResult === 'timeout')}}" name="close-circle-filled" color="#f14d4d" size="40rpx" />
+                  </view>
+                </button>
+              </block>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{isMultiplayer && showRoundResult && gameRound < gameTotalRounds}}" class="waiting-next">
+          {{ waitingForOpponentNext ? '等待对手...' : '本题已锁定，等待下一轮...' }}
+        </view>
+      </view>
+
+      <view wx:if="{{gameState === 'result'}}" class="result-shell">
+        <view class="result-card">
+          <text class="eyebrow-label">CHALLENGE OVER</text>
+          <text class="result-title">{{isMultiplayer ? (gameScore > opponentScore ? '你赢了！' : (gameScore === opponentScore ? '平局' : '惜败')) : '挑战结束'}}</text>
+          <view class="result-score-panel">
+            <text class="result-score">{{gameScore}}</text>
+            <text wx:if="{{isMultiplayer}}" class="opponent-result-score">对手 {{opponentScore}}</text>
+          </view>
+          <view class="result-desc">
+            <text wx:if="{{gameScore >= 80}}">太强了，这一局几乎没有漏拍。</text>
+            <text wx:elif="{{gameScore >= 60}}">状态不错，再来一局很有机会继续抬分。</text>
+            <text wx:else>热身已经完成，下一局大概就要发力了。</text>
+          </view>
+          <t-button wx:if="{{!isMultiplayer}}" theme="primary" size="large" t-class="restart-btn" bind:tap="restartGame">再玩一次</t-button>
+          <view class="back-to-intro" bindtap="goToIntro">返回选择界面</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{playlistCreatorVisible}}" class="playlist-modal-mask" catchtap="hidePlaylistCreator">
+      <view class="playlist-modal" catchtap="noop">
+        <text class="playlist-modal-kicker">NEW PLAYLIST</text>
+        <text class="playlist-modal-title">新建歌单</text>
+        <input
+          class="playlist-name-input"
+          value="{{playlistNameDraft}}"
+          placeholder="比如：通勤路上"
+          placeholder-class="playlist-name-placeholder"
+          bindinput="onPlaylistNameInput"
+          confirm-type="done"
+          bindconfirm="createPlaylist"
+        />
+        <view class="playlist-modal-actions">
+          <button class="playlist-modal-btn" bindtap="hidePlaylistCreator">取消</button>
+          <button class="playlist-modal-btn playlist-modal-primary" bindtap="createPlaylist">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{playlistEditorVisible}}" class="playlist-modal-mask" catchtap="hidePlaylistEditor">
+      <view class="playlist-modal playlist-edit-modal" catchtap="noop">
+        <text class="playlist-modal-kicker">EDIT PLAYLIST</text>
+        <text class="playlist-modal-title">编辑歌单</text>
+
+        <view class="playlist-edit-cover-row">
+          <image class="playlist-edit-cover" src="{{playlistCoverEdit || '/images/icons/music.png'}}" mode="aspectFill" />
+          <view class="playlist-edit-cover-actions">
+            <button class="playlist-cover-btn" bindtap="choosePlaylistCoverFromAlbum">
+              <t-icon name="image-add" size="28rpx" color="#12201d" />
+              <text>相册封面</text>
+            </button>
+            <text class="playlist-cover-hint">也可以点下方歌曲封面</text>
+          </view>
+        </view>
+
+        <input
+          class="playlist-name-input"
+          value="{{playlistNameEdit}}"
+          placeholder="歌单名称"
+          placeholder-class="playlist-name-placeholder"
+          bindinput="onPlaylistEditNameInput"
+        />
+        <input
+          class="playlist-name-input playlist-desc-input"
+          value="{{playlistDescEdit}}"
+          placeholder="一句描述"
+          placeholder-class="playlist-name-placeholder"
+          bindinput="onPlaylistEditDescInput"
+        />
+
+        <scroll-view wx:if="{{selectedPlaylistSongs.length}}" class="cover-picker-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="cover-picker-row">
+            <view
+              wx:for="{{selectedPlaylistSongs}}"
+              wx:key="rid"
+              class="cover-picker-item {{playlistCoverEdit === item.pic ? 'cover-picker-item-active' : ''}}"
+              data-cover="{{item.pic}}"
+              bindtap="selectPlaylistCoverFromSong"
+            >
+              <image class="cover-picker-image" src="{{item.pic || '/images/icons/music.png'}}" mode="aspectFill" />
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="playlist-modal-actions">
+          <button class="playlist-modal-btn" bindtap="hidePlaylistEditor">取消</button>
+          <button class="playlist-modal-btn playlist-modal-primary" bindtap="savePlaylistEditor">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{addToPlaylistVisible && addTargetSong}}" class="playlist-modal-mask" catchtap="closeAddSongSheet">
+      <view class="playlist-modal" catchtap="noop">
+        <text class="playlist-modal-kicker">ADD TO PLAYLIST</text>
+        <text class="playlist-modal-title">加入歌单</text>
+        <view class="add-target-card">
+          <image class="add-target-cover" src="{{addTargetSong.pic || '/images/icons/music.png'}}" mode="aspectFill" />
+          <view class="add-target-copy">
+            <text class="add-target-title">{{addTargetSong.name}}</text>
+            <text class="add-target-artist">{{addTargetSong.artist}}</text>
+          </view>
+        </view>
+
+        <view class="add-playlist-list">
+          <view
+            wx:for="{{playlists}}"
+            wx:key="id"
+            class="add-playlist-row"
+            data-playlist-id="{{item.id}}"
+            bindtap="addTargetToPlaylist"
+          >
+            <text class="add-playlist-name">{{item.name}}</text>
+            <text class="add-playlist-count">{{item.songs.length}} 首</text>
+          </view>
+        </view>
+
+        <view class="quick-create-row">
+          <input
+            class="quick-create-input"
+            value="{{playlistNameDraft}}"
+            placeholder="新歌单名"
+            placeholder-class="playlist-name-placeholder"
+            bindinput="onPlaylistNameInput"
+          />
+          <button class="quick-create-btn" bindtap="createPlaylistFromAddSheet">新建并加入</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

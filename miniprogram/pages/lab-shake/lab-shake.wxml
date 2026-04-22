@@ -1,0 +1,40 @@
+<view class="shake-page">
+  <view class="tool-head">
+    <text class="kicker">RANDOM</text>
+    <text class="title">摇一摇盲盒</text>
+    <text class="subtitle">歌曲任务、冷知识和小音效都藏在盒子里。</text>
+  </view>
+
+  <view class="box-stage {{currentBox ? 'box-stage-open' : ''}}">
+    <view class="box-icon">
+      <t-icon name="{{currentBox ? (currentBox.type === 'sound' ? 'sound' : 'music') : 'gift'}}" size="72rpx" color="#10201d" />
+    </view>
+    <text class="box-tag">{{currentBox ? currentBox.tag : '等待开启'}}</text>
+    <text class="box-title">{{currentBox ? currentBox.title : '打开一个盲盒'}}</text>
+    <text class="box-text">{{currentBox ? currentBox.text : '今晚的惊喜还没出现。'}}</text>
+  </view>
+
+  <view class="actions">
+    <button class="primary-btn" bindtap="toggleShake">
+      <t-icon name="{{isListening ? 'pause-circle-filled' : 'sound'}}" size="30rpx" color="#10201d" />
+      <text>{{isListening ? '停止监听' : '开始摇一摇'}}</text>
+    </button>
+    <button class="ghost-btn" bindtap="openBlindBox">手动开盒</button>
+  </view>
+
+  <view class="status-row">
+    <text class="status-text">{{isListening ? '正在监听手机晃动' : '未开启监听'}}</text>
+    <text class="status-text">已开 {{shakeCount}} 次</text>
+  </view>
+
+  <view wx:if="{{history.length}}" class="history">
+    <view class="history-head">
+      <text class="history-title">最近开盒</text>
+      <text class="history-clear" bindtap="clearHistory">清空</text>
+    </view>
+    <view wx:for="{{history}}" wx:key="id" class="history-row">
+      <text class="history-tag">{{item.tag}}</text>
+      <text class="history-name">{{item.title}}</text>
+    </view>
+  </view>
+</view>

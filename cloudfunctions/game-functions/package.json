@@ -1,0 +1,14 @@
+{
+    "name": "game-functions",
+    "version": "1.0.0",
+    "description": "Game logic for Online 1v1 PK",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "wx-server-sdk": "~2.6.3"
+    }
+}

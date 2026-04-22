@@ -1,0 +1,11 @@
+{
+  "name": "place-song-functions",
+  "version": "1.0.0",
+  "description": "Global place song wall",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~3.0.1"
+  }
+}

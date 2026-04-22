@@ -1,0 +1,160 @@
+<view class="listen-room-page">
+  <view class="listen-room-hero">
+    <view class="hero-copy">
+      <text class="eyebrow">TOGETHER</text>
+      <text class="hero-title">一起听</text>
+      <text class="hero-subtitle">创建房间拉好友，再同步播放同一首歌。</text>
+    </view>
+    <view class="hero-icon">
+      <t-icon name="sound" size="70rpx" color="#7dd7c2" />
+    </view>
+  </view>
+
+  <view class="room-panel">
+    <view class="section-head">
+      <text class="section-kicker">ROOM</text>
+      <view wx:if="{{room}}" class="room-title-row">
+        <text class="section-title">房间 {{roomId}}</text>
+        <button class="room-copy-mini" bindtap="copyRoomId" aria-label="复制">
+          <t-icon name="copy" size="24rpx" color="#12201d" />
+        </button>
+      </view>
+      <text wx:else class="section-title">创建或加入房间</text>
+    </view>
+
+    <view wx:if="{{room}}" class="room-card">
+      <view wx:if="{{roomSong}}" class="room-song">
+        <image class="room-cover" src="{{roomSong.pic || '/images/icons/music.png'}}" mode="aspectFill" />
+        <view class="room-song-copy">
+          <text class="room-song-title">{{roomSong.name}}</text>
+          <text class="room-song-artist">{{roomSong.artist}}</text>
+          <text class="room-state">{{isHost ? '你是房主' : '正在跟随房主'}} · {{room.state === 'closed' ? '已关闭' : (isPlaying ? '播放中' : '已暂停')}}</text>
+        </view>
+      </view>
+      <view wx:else class="room-empty-song">
+        <t-icon name="music" size="42rpx" color="rgba(244,247,246,0.56)" />
+        <view class="room-song-copy">
+          <text class="room-song-title">房间已就绪</text>
+          <text class="room-song-artist">{{isHost ? '邀请好友进来后，在下方搜索并同步一首歌。' : '等待房主开始放歌。'}}</text>
+        </view>
+      </view>
+
+      <view class="room-actions {{isHost ? 'room-actions-three' : ''}}">
+        <button class="room-btn room-btn-primary" open-type="share">
+          <t-icon name="share" size="26rpx" color="#12201d" />
+          <text>邀请好友</text>
+        </button>
+        <button class="room-btn" bindtap="refreshRoom">
+          <t-icon name="refresh" size="26rpx" color="#f4f7f6" />
+          <text>刷新</text>
+        </button>
+        <button wx:if="{{isHost}}" class="room-btn room-btn-danger" loading="{{closing}}" disabled="{{room.state === 'closed' || closing}}" bindtap="closeRoom">
+          <t-icon name="close-circle" size="26rpx" color="#f4f7f6" />
+          <text>关闭</text>
+        </button>
+      </view>
+
+      <view class="player-strip">
+        <text class="player-time">{{currentText}}</text>
+        <slider
+          class="player-slider {{isHost && roomSong && durationSeconds ? 'player-slider-active' : 'player-slider-view'}}"
+          value="{{progressPercent}}"
+          min="0"
+          max="100"
+          step="0.1"
+          disabled="{{!isHost || !roomSong || !durationSeconds || room.state === 'closed'}}"
+          bindchanging="onProgressChanging"
+          bindchange="onProgressChange"
+          activeColor="#7dd7c2"
+          backgroundColor="rgba(255,255,255,0.1)"
+          block-color="#7dd7c2"
+          block-size="14"
+        />
+        <text class="player-time">{{durationText}}</text>
+      </view>
+
+      <view class="host-controls">
+        <button class="control-btn control-play" bindtap="playRoom" disabled="{{!isHost || !roomSong || room.state === 'closed'}}">
+          <t-icon name="play-circle-filled" size="34rpx" color="#12201d" />
+          <text>播放</text>
+        </button>
+        <button class="control-btn" bindtap="pauseRoom" disabled="{{!isHost || !roomSong || room.state === 'closed'}}">
+          <t-icon name="pause-circle-filled" size="34rpx" color="#f4f7f6" />
+          <text>暂停</text>
+        </button>
+      </view>
+    </view>
+
+    <view wx:else>
+      <view class="join-row">
+        <input class="room-input" value="{{roomIdInput}}" placeholder="输入 6 位房间号" placeholder-class="input-placeholder" maxlength="8" bindinput="onRoomIdInput" />
+        <button class="join-btn" loading="{{joining}}" bindtap="joinRoom">加入</button>
+      </view>
+      <button class="create-room-btn" loading="{{creating}}" bindtap="createRoom">
+        <t-icon name="add-circle" size="28rpx" color="#12201d" />
+        <text>创建房间</text>
+      </button>
+    </view>
+  </view>
+
+    <view wx:if="{{room && room.state !== 'closed'}}" class="search-panel">
+    <view class="section-head">
+      <text class="section-kicker">SONG</text>
+      <text class="section-title">点歌</text>
+    </view>
+
+    <view class="search-box">
+      <t-icon name="search" size="30rpx" color="rgba(244,247,246,0.56)" />
+      <input class="search-input" value="{{searchKey}}" placeholder="搜索歌名或歌手" placeholder-class="input-placeholder" confirm-type="search" bindinput="onSearchInput" bindconfirm="searchSongs" />
+      <button class="search-btn" loading="{{searching}}" bindtap="searchSongs">搜索</button>
+    </view>
+
+    <view wx:if="{{selectedSong}}" class="selected-song">
+      <image class="selected-cover" src="{{selectedSong.pic || '/images/icons/music.png'}}" mode="aspectFill" />
+      <view class="selected-copy">
+        <text class="selected-title">{{selectedSong.name}}</text>
+        <text class="selected-artist">{{selectedSong.artist}}</text>
+      </view>
+      <button class="create-btn" loading="{{syncing}}" disabled="{{!isHost || syncing}}" bindtap="syncSelectedSong">{{isHost ? '点歌播放' : '仅房主'}}</button>
+    </view>
+
+    <view wx:if="{{searchResults.length}}" class="search-list">
+      <view
+        wx:for="{{searchResults}}"
+        wx:key="rid"
+        class="song-row {{selectedSong && selectedSong.rid === item.rid ? 'song-row-active' : ''}}"
+        data-rid="{{item.rid}}"
+        bindtap="selectSong"
+      >
+        <image class="song-cover" src="{{item.pic || '/images/icons/music.png'}}" mode="aspectFill" lazy-load />
+        <view class="song-copy">
+          <text class="song-title">{{item.name}}</text>
+          <text class="song-artist">{{item.artist}}</text>
+        </view>
+        <button class="song-sync-mini" data-rid="{{item.rid}}" catchtap="syncSongFromRow" loading="{{syncing}}" disabled="{{!isHost || syncing}}">
+          <text>{{isHost ? '点歌' : '仅房主'}}</text>
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{room}}" class="reaction-panel">
+    <view class="section-head">
+      <text class="section-kicker">REACTION</text>
+      <text class="section-title">互动</text>
+    </view>
+    <view class="emoji-row">
+      <button wx:for="{{emojiReactions}}" wx:key="*this" class="emoji-btn" data-type="emoji" data-text="{{item}}" bindtap="sendReaction">{{item}}</button>
+    </view>
+    <view class="quick-row">
+      <button wx:for="{{quickReactions}}" wx:key="*this" class="quick-btn" data-type="quick" data-text="{{item}}" bindtap="sendReaction">{{item}}</button>
+    </view>
+
+    <view class="event-list">
+      <view wx:for="{{room.events}}" wx:key="id" class="event-row">
+        <text class="event-type">{{item.type === 'system' ? '系统' : '互动'}}</text>
+        <text class="event-text">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+</view>

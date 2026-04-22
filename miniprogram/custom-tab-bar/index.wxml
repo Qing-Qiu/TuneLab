@@ -1,0 +1,15 @@
+<view class="tab-bar-shell">
+  <view
+    wx:for="{{list}}"
+    wx:key="value"
+    class="tab-item {{value === item.value ? 'tab-item-active' : ''}}"
+    data-path="{{item.value}}"
+    bindtap="onTap"
+    aria-label="{{item.label}}"
+  >
+    <view class="tab-icon-shell">
+      <image class="tab-icon" src="{{item.image}}" mode="aspectFit" />
+    </view>
+    <text class="tab-label">{{item.label}}</text>
+  </view>
+</view>

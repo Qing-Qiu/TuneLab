@@ -1,0 +1,155 @@
+<view class="mixtape-page">
+  <view class="mixtape-hero">
+    <view class="hero-copy">
+      <text class="eyebrow">PLACE VOICE</text>
+      <text class="hero-title">此刻留声</text>
+      <text class="hero-subtitle">在真实位置，留下一首歌和一句话。</text>
+    </view>
+    <view class="hero-icon">
+      <t-icon name="map-route-planning" size="72rpx" color="#7dd7c2" />
+    </view>
+  </view>
+
+  <view wx:if="{{!cloudReady}}" class="cloud-warning">
+    <t-icon name="cloud" size="26rpx" color="#f1a36c" />
+    <text>当前显示的是本机缓存，部署 place-song-functions 后会同步全局内容。</text>
+  </view>
+
+  <view class="map-shell">
+    <map
+      class="mixtape-map"
+      latitude="{{mapLatitude}}"
+      longitude="{{mapLongitude}}"
+      scale="{{mapScale}}"
+      markers="{{mapMarkers}}"
+      include-points="{{includePoints}}"
+      bindmarkertap="onMarkerTap"
+    ></map>
+  </view>
+
+  <view class="editor-panel">
+    <view class="section-header">
+      <text class="section-kicker">CREATE</text>
+      <text class="section-title">留下一首歌</text>
+    </view>
+
+    <view class="place-picker">
+      <view class="place-copy">
+        <text class="place-title">{{draftPlace ? draftPlace.name : '还没有选择位置'}}</text>
+        <text class="place-desc">{{draftPlace ? (draftPlace.address || draftPlace.coordinateText) : '地图选点或使用当前位置。'}}</text>
+      </view>
+      <button class="map-mini-btn" bindtap="openDraftMap">
+        <t-icon name="map" size="26rpx" color="#12201d" />
+      </button>
+    </view>
+
+    <view class="action-row">
+      <button class="action-btn action-btn-primary" bindtap="choosePlace">
+        <t-icon name="map-search" size="30rpx" color="#12201d" />
+        <text>地图选点</text>
+      </button>
+      <button class="action-btn" bindtap="useCurrentLocation">
+        <t-icon name="location" size="30rpx" color="#f4f7f6" />
+        <text>当前位置</text>
+      </button>
+    </view>
+
+    <view class="song-search-card">
+      <view class="song-search-box">
+        <t-icon name="search" size="28rpx" color="rgba(244,247,246,0.56)" />
+        <input class="song-search-input" value="{{searchKey}}" placeholder="搜索歌名或歌手" placeholder-class="input-placeholder" confirm-type="search" bindinput="onSongSearchInput" bindconfirm="searchSongs" />
+        <button class="song-search-btn" loading="{{searching}}" bindtap="searchSongs">搜索</button>
+      </view>
+
+      <view wx:if="{{selectedSong}}" class="selected-song">
+        <image class="selected-cover" src="{{selectedSong.pic || '/images/icons/music.png'}}" mode="aspectFill" />
+        <view class="selected-copy">
+          <text class="selected-title">{{selectedSong.name}}</text>
+          <text class="selected-artist">{{selectedSong.artist}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{searchResults.length}}" class="song-result-list">
+        <view
+          wx:for="{{searchResults}}"
+          wx:key="rid"
+          class="song-result-row {{selectedSong && selectedSong.rid === item.rid ? 'song-result-row-active' : ''}}"
+          data-rid="{{item.rid}}"
+          bindtap="selectSong"
+        >
+          <image class="song-result-cover" src="{{item.pic || '/images/icons/music.png'}}" mode="aspectFill" lazy-load />
+          <view class="song-result-copy">
+            <text class="song-result-title">{{item.name}}</text>
+            <text class="song-result-artist">{{item.artist}}</text>
+          </view>
+          <t-icon name="chevron-right" size="22rpx" color="rgba(244,247,246,0.5)" />
+        </view>
+      </view>
+    </view>
+
+    <input class="text-input solo-input" value="{{draftNickName}}" placeholder="你的昵称" placeholder-class="input-placeholder" maxlength="20" bindinput="onNickNameInput" />
+
+    <textarea
+      class="note-input"
+      value="{{draftNote}}"
+      placeholder="写一句话，其他走到这里的人都能看到"
+      placeholder-class="input-placeholder"
+      maxlength="120"
+      bindinput="onNoteInput"
+    ></textarea>
+
+    <view class="save-row">
+      <button class="save-btn" loading="{{submitting}}" bindtap="saveEntry">发布</button>
+      <button class="clear-btn" bindtap="clearDraft">清空</button>
+    </view>
+  </view>
+
+  <view class="section-header list-header">
+    <text class="section-kicker">GLOBAL WALL</text>
+    <text class="section-title">全局留声墙</text>
+  </view>
+
+  <view wx:if="{{entries.length}}" class="entry-list">
+    <view
+      wx:for="{{entries}}"
+      wx:key="_id"
+      class="entry-card {{selectedEntryId === item._id ? 'entry-card-active' : ''}}"
+      data-entry-id="{{item._id}}"
+      bindtap="selectEntry"
+      hover-class="entry-card-hover"
+    >
+      <view class="entry-main">
+        <view class="entry-top">
+          <text class="entry-place">{{item.placeName}}</text>
+          <text class="entry-time">{{item.createdAtText}}</text>
+        </view>
+        <view class="entry-song-row">
+          <image class="entry-cover" src="{{item.songPic || '/images/icons/music.png'}}" mode="aspectFill" />
+          <view class="entry-song-copy">
+            <text class="entry-song">{{item.songName}}</text>
+            <text class="entry-artist">{{item.artist}}</text>
+          </view>
+        </view>
+        <text class="entry-note">{{item.note}}</text>
+        <text class="entry-author">{{item.nickName}}</text>
+      </view>
+      <view class="entry-actions">
+        <button wx:if="{{item.isOwner}}" class="entry-icon-btn entry-icon-btn-danger" data-entry-id="{{item._id}}" catchtap="deleteEntry">
+          <t-icon name="delete" size="24rpx" color="#ffffff" />
+        </button>
+        <button wx:else class="entry-like-btn {{item.liked ? 'entry-like-btn-done' : ''}}" data-entry-id="{{item._id}}" catchtap="likeEntry">
+          <t-icon name="heart" size="22rpx" color="{{item.liked ? '#12201d' : '#f4f7f6'}}" />
+          <text>{{item.likeCount}}</text>
+        </button>
+      </view>
+    </view>
+
+    <button class="export-btn" bindtap="exportMixtape">复制全局留声墙</button>
+  </view>
+
+  <view wx:else class="empty-state">
+    <t-icon name="map" size="58rpx" color="rgba(244, 247, 246, 0.5)" />
+    <text class="empty-title">{{loading ? '正在加载留声墙' : '还没有留声'}}</text>
+    <text class="empty-desc">选一个真实位置，给后来的人留下一首歌。</text>
+  </view>
+</view>

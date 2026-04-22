@@ -1,0 +1,105 @@
+<view class="schulte-page">
+  <view class="tool-head">
+    <view>
+      <text class="kicker">FOCUS</text>
+      <text class="title">舒尔特方格</text>
+      <text class="subtitle">按顺序找数字，给注意力热身。</text>
+    </view>
+    <view class="head-actions">
+      <button class="icon-btn" bindtap="openRankModal" aria-label="排行榜">
+        <t-icon name="chart-bar" size="34rpx" color="#f4f7f6" />
+      </button>
+      <button class="icon-btn" bindtap="resetGame" aria-label="重开">
+        <t-icon name="refresh" size="34rpx" color="#f4f7f6" />
+      </button>
+    </view>
+  </view>
+
+  <view class="metrics">
+    <view class="metric">
+      <text class="metric-value">{{elapsedText}}</text>
+      <text class="metric-label">用时</text>
+    </view>
+    <view class="metric">
+      <text class="metric-value">{{nextNumber > size * size ? '-' : nextNumber}}</text>
+      <text class="metric-label">下一个</text>
+    </view>
+    <view class="metric">
+      <text class="metric-value">{{cloudBestText}}</text>
+      <text class="metric-label">个人云记录</text>
+    </view>
+  </view>
+
+  <view class="size-tabs">
+    <button
+      wx:for="{{sizeOptions}}"
+      wx:key="*this"
+      class="size-tab {{size === item ? 'size-tab-active' : ''}}"
+      data-size="{{item}}"
+      bindtap="selectSize"
+    >
+      {{item}} × {{item}}
+    </button>
+  </view>
+
+  <view class="board board-size-{{size}}" style="grid-template-columns: repeat({{size}}, minmax(0, 1fr)); grid-template-rows: repeat({{size}}, minmax(0, 1fr));">
+    <view
+      wx:for="{{cells}}"
+      wx:key="number"
+      class="cell {{item.done ? 'cell-done' : ''}} {{item.number === nextNumber ? 'cell-next' : ''}}"
+      data-index="{{index}}"
+      bindtap="tapCell"
+    >
+      <text>{{item.done ? '' : item.number}}</text>
+    </view>
+  </view>
+
+  <view class="bottom-bar">
+    <text class="hint">{{isRunning ? '保持节奏' : (isFinished ? '再来一局' : '准备开始')}}</text>
+    <text class="mistakes">误点 {{mistakes}}</text>
+  </view>
+
+  <view wx:if="{{rankModalVisible}}" class="rank-mask" bindtap="closeRankModal">
+    <view class="record-panel" catchtap="noop">
+      <view class="record-head">
+        <view>
+          <text class="record-title">全服排行榜</text>
+          <text class="record-status">{{recordStatus}}</text>
+        </view>
+        <button class="record-refresh" loading="{{recordsLoading}}" bindtap="loadCloudRecords">
+          <t-icon name="refresh" size="28rpx" color="#f4f7f6" />
+        </button>
+      </view>
+
+      <view class="profile-card">
+        <view class="profile-copy">
+          <text class="profile-label">榜单昵称</text>
+          <text class="profile-name">{{profileReady ? profileName : '授权后显示微信昵称'}}</text>
+        </view>
+        <button class="profile-btn" bindtap="authorizeNickname">{{profileReady ? '更新' : '授权'}}</button>
+      </view>
+
+      <view class="mine-card">
+        <text class="mine-label">个人云记录</text>
+        <text class="mine-value">{{cloudBestText}}</text>
+      </view>
+
+      <view wx:if="{{globalRecords.length}}" class="record-list">
+        <view wx:for="{{globalRecords}}" wx:key="rank" class="record-row">
+          <text class="record-rank">#{{item.rank}}</text>
+          <view class="record-copy">
+            <text class="record-name">{{item.displayName}}</text>
+            <text class="record-meta">{{item.mistakesText}} · {{item.playCount}} 局</text>
+          </view>
+          <text class="record-time">{{item.elapsedText}}</text>
+        </view>
+      </view>
+
+      <view wx:else class="record-empty">
+        <text>{{recordsLoading ? '正在读取...' : '完成一局后会出现记录。'}}</text>
+      </view>
+
+      <button class="modal-close" bindtap="closeRankModal">关闭</button>
+    </view>
+  </view>
+</view>

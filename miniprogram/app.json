@@ -1,0 +1,52 @@
+{
+  "pages": [
+    "pages/amusement/amusement",
+    "pages/user/user",
+    "pages/lab-nearby/lab-nearby",
+    "pages/lab-listen-room/lab-listen-room",
+    "pages/lab-piano/lab-piano",
+    "pages/lab-schulte/lab-schulte",
+    "pages/lab-shake/lab-shake"
+  ],
+  "tabBar": {
+    "custom": true,
+    "list": [
+      {
+        "pagePath": "pages/amusement/amusement",
+        "text": "音乐",
+        "iconPath": "images/icons/music.png",
+        "selectedIconPath": "images/icons/music.png"
+      },
+      {
+        "pagePath": "pages/user/user",
+        "text": "我的",
+        "iconPath": "images/icons/user.png",
+        "selectedIconPath": "images/icons/user.png"
+      }
+    ]
+  },
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "秋刀鱼爱听歌",
+    "navigationBarBackgroundColor": "#0f1715",
+    "backgroundColor": "#0f1715"
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于在地点歌单中记录真实地点和音乐足迹"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation",
+    "chooseLocation"
+  ],
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "usingComponents": {
+    "t-icon": "tdesign-miniprogram/icon/icon"
+  },
+  "requiredBackgroundModes": [
+    "audio"
+  ]
+}

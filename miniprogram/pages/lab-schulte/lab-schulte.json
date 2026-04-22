@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "舒尔特方格",
+  "navigationBarBackgroundColor": "#0f1715",
+  "navigationBarTextStyle": "white",
+  "usingComponents": {
+    "t-icon": "tdesign-miniprogram/icon/icon"
+  }
+}
